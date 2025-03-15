@@ -12,9 +12,9 @@ In this project, we design a modified ResNet for CIFAR-10 classification that:
 
 Inspired by *Efficient ResNets: Residual Network Design* by Thakur, Chauhan, and Gupta ([arXiv:2306.12100](https://doi.org/10.48550/arXiv.2306.12100)), our approach leverages these modern techniques to build an efficient yet powerful network.
 
-## 2. Methodology
+---
 
-Our methodology is divided into three main parts: model architecture & hyperparameters, optimization and training strategy, and implementation details.
+## 2. Methodology
 
 ### 2.1 Model Architecture & Hyperparameters
 
@@ -36,9 +36,9 @@ Our methodology is divided into three main parts: model architecture & hyperpara
   SE blocks are integrated to recalibrate the feature maps by modeling channel interdependencies. This mechanism allows the network to emphasize informative features while suppressing less useful ones.
 
 - **Implementation Details:**  
-  - **Squeeze:** Global average pooling compresses the spatial dimensions, producing a channel descriptor.
-  - **Excitation:** The descriptor passes through two fully connected (or 1×1 convolutional) layers with a ReLU activation followed by a sigmoid function, yielding channel-wise weights.
-  - **Recalibration:** These weights multiply the original feature maps to dynamically adjust channel responses.
+  1. **Squeeze:** Global average pooling compresses the spatial dimensions, producing a channel descriptor.  
+  2. **Excitation:** The descriptor passes through two fully connected (or 1×1 convolutional) layers with a ReLU activation followed by a sigmoid function, yielding channel-wise weights.  
+  3. **Recalibration:** These weights multiply the original feature maps to dynamically adjust channel responses.
 
 In our configuration, the SE block is enabled (`squeeze_and_excitation: True`), which provides a significant boost in discriminative capability with minimal extra parameters.
 
@@ -97,62 +97,73 @@ In our configuration, the SE block is enabled (`squeeze_and_excitation: True`), 
   The project is implemented in PyTorch, utilizing its flexible modules for neural network construction, data handling, and GPU acceleration.
 
 - **Code Structure:**
-  - **Model Definition:**  
-    The ResNet is built with modular residual blocks that incorporate dropout and optional SE blocks. A helper function (`conv1x1`) is defined for 1×1 convolutions, crucial for shortcut connections and SE block operations.
-  - **Training Pipeline:**  
-    The training loop includes:
-    - Forward pass with CrossEntropyLoss.
-    - Backward propagation and gradient computation.
-    - Optimizer updates with the Lookahead mechanism.
-    - Logging of loss and accuracy metrics via TensorBoard.
-    - Checkpointing when validation accuracy improves.
-  - **Inference Pipeline:**  
-    A custom dataset class loads test data from a pickle file (`cifar_test_nolabel.pkl`), and the model’s predictions are saved in a CSV file.
-  - **Utility Functions:**  
-    Additional scripts count the model parameters to ensure the total remains under the 5 million parameter threshold.
+  1. **Model Definition:**  
+     The ResNet is built with modular residual blocks that incorporate dropout and optional SE blocks. A helper function (`conv1x1`) is defined for 1×1 convolutions, crucial for shortcut connections and SE block operations.
+  2. **Training Pipeline:**  
+     The training loop includes:
+     - Forward pass with CrossEntropyLoss.
+     - Backward propagation and gradient computation.
+     - Optimizer updates with the Lookahead mechanism.
+     - Logging of loss and accuracy metrics via TensorBoard.
+     - Checkpointing when validation accuracy improves.
+  3. **Inference Pipeline:**  
+     A custom dataset class loads test data from a pickle file (`cifar_test_nolabel.pkl`), and the model’s predictions are saved in a CSV file.
+  4. **Utility Functions:**  
+     Additional scripts count the model parameters to ensure the total remains under the 5 million parameter threshold.
+
+---
 
 ## 3. Experiments and Results
 
-### Experimental Setup
+### 3.1 Training & Validation Curves
 
-- **Dataset:**  
-  The CIFAR-10 dataset, containing 60,000 32×32 color images in 10 classes, is used for training and evaluation.
+The figures below illustrate the training and validation curves for both loss and accuracy across 300 epochs.
 
-- **Training Process:**  
-  The model is trained over 300 epochs with the above configurations. Data augmentation and normalization are applied to improve generalization, and the Cosine Annealing scheduler adjusts the learning rate smoothly during training.
+**Figure 1: Training & Validation Loss**
+![Training & Validation Loss](./output.png)
 
-### Results and Analysis
+As seen in Figure 1, the training loss rapidly decreases in the early epochs, then continues to converge gradually. The validation loss follows a similar pattern but is typically higher than the training loss due to the inherent difficulty of generalizing to unseen data.
 
-- **Training Convergence:**  
-  The training and validation loss curves demonstrate a steady decline, while accuracy improves consistently. The integration of dropout and SE blocks aids in faster convergence and improved performance on the validation set.
+**Figure 2: Training & Validation Accuracy**
+![Training & Validation Accuracy](./output1.png)
 
-- **Performance Metrics:**
-  - **Training Accuracy:**  
-    High training accuracy is achieved as the network effectively learns to classify CIFAR-10 images.
-  - **Validation Accuracy:**  
-    The model attains competitive validation accuracy, confirming its generalization capability.
-  - **Inference:**  
-    The custom inference pipeline processes test data and outputs predictions in a CSV file. Confusion matrices and classification reports further validate robust performance across classes.
+In Figure 2, we observe a steep initial increase in both training and validation accuracy, followed by a slower, more gradual improvement. The model maintains a high level of accuracy throughout the final epochs, demonstrating strong generalization capabilities.
 
-- **Model Efficiency:**  
-  A parameter counting utility confirms that the model's trainable parameters remain under the 5 million limit. The SE blocks contribute significant performance improvements with minimal parameter overhead.
+### 3.2 Confusion Matrix
 
-- **Comparative Insights:**  
-  Despite the reduced parameter count, the modified ResNet shows competitive performance compared to larger models like ResNet18, demonstrating that careful architectural design and advanced optimization techniques can yield high accuracy with fewer resources.
+To further analyze class-wise performance, we generate a confusion matrix (Figure 3).
+
+**Figure 3: Confusion Matrix**
+![Confusion Matrix](./output23.png)
+
+From the confusion matrix, we can see that most classes are correctly predicted at high rates, indicating the network’s strong discriminative ability. Misclassifications tend to occur in visually similar classes, which is a common challenge in CIFAR-10.
+
+### 3.3 Overall Performance
+
+- **Convergence:**  
+  Training and validation losses/accuracies confirm that the model learns robust feature representations.
+- **Parameter Budget:**  
+  A parameter counting script verifies that the total trainable parameters remain under 5 million, satisfying the efficiency requirement.
+- **Accuracy:**  
+  The model demonstrates competitive accuracy compared to larger networks like ResNet18, showcasing the effectiveness of integrating dropout and SE blocks.
+
+---
 
 ## 4. System Specifications
 
-The experiments and training were conducted on a high-performance GPU cloud instance with the following specifications:
+All experiments and training processes were conducted on the following hardware and software setup:
 
-- **Environment:** GPU Cloud Instance
-- **CPU:** 32 vCPU
-- **GPU:** Nvidia RTC 4090
-- **System Memory:** 120 GB
-- **Python Version:** 3.10.2
-- **CUDA Version:** v12.1
-- **Torch Version:** 2.2.4
+- **Environment:** GPU Cloud Instance  
+- **CPU:** 32 vCPU  
+- **GPU:** Nvidia RTC 4090  
+- **System Memory:** 120 GB  
+- **Python Version:** 3.10.2  
+- **CUDA Version:** v12.1  
+- **Torch Version:** 2.2.4  
 
-These specifications ensured efficient training and inference, allowing for rapid experimentation and robust performance evaluation.
+This high-performance environment allowed for rapid experimentation, large batch sizes, and efficient training.
+
+---
 
 ## 5. Conclusion
 
@@ -168,7 +179,6 @@ This project presents a comprehensive exploration of a modified ResNet architect
   Advanced techniques such as data augmentation, Cosine Annealing learning rate scheduling, and the Lookahead optimizer contribute to stable convergence and high accuracy.
 
 - **Practical Applicability:**  
-  The model is well-suited for deployment on resource-constrained devices, as demonstrated by the successful implementation and evaluation on a GPU cloud instance with high-end hardware.
+  The model is well-suited for deployment on resource-constrained devices, as demonstrated by its strong performance despite a limited parameter count.
 
-Future work could include exploring further regularization methods, extending the architecture to additional datasets, and fine-tuning hyperparameters to push the performance envelope even further.
-
+In summary, our modified ResNet with Squeeze-and-Excitation blocks offers a promising solution for CIFAR-10 classification where both performance and parameter efficiency are critical. Future directions include extending this architecture to other datasets, experimenting with additional regularization techniques, and fine-tuning hyperparameters to further improve performance.
