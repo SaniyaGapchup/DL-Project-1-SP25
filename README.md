@@ -1,121 +1,190 @@
-# Detailed Report on Modified ResNet for CIFAR-10 Classification with Squeeze-and-Excitation Blocks
+# DL-Project-1-SP25
 
-## 1. Introduction
+# Modified ResNet for CIFAR-10 Classification
 
-Image classification remains a cornerstone task in computer vision, and Convolutional Neural Networks (CNNs) have continuously evolved to meet increasing performance demands. Residual Networks (ResNets) have been especially impactful due to their ability to train very deep networks using skip connections that mitigate the vanishing gradient problem.
+This repository implements a modified ResNet architecture tailored for image classification on the CIFAR-10 dataset. The project features several key modifications and enhancements, such as configurable convolution and shortcut kernel sizes, integration of Squeeze-and-Excitation (SE) blocks, dropout regularization, and the use of a Lookahead optimizer wrapped around SGD. An emphasis is placed on maintaining a parameter budget below 5 million parameters while achieving competitive performance.
 
-In this project, we design a modified ResNet for CIFAR-10 classification that:
-- **Maximizes Accuracy:** Targets state-of-the-art performance on CIFAR-10.
-- **Optimizes Efficiency:** Keeps the model under a strict budget of 5 million trainable parameters, making it ideal for deployment on edge devices and IoT applications.
-- **Enhances Feature Representation:** Integrates Squeeze-and-Excitation (SE) blocks to recalibrate channel-wise features dynamically, boosting the network's representational power.
-- **Improves Convergence:** Utilizes advanced training strategies such as data augmentation, a Cosine Annealing learning rate scheduler, and the Lookahead optimizer to ensure robust training.
+## Project Overview
 
-Inspired by *Efficient ResNets: Residual Network Design* by Thakur, Chauhan, and Gupta ([arXiv:2306.12100](https://doi.org/10.48550/arXiv.2306.12100)), our approach leverages these modern techniques to build an efficient yet powerful network.
+- **Modified ResNet Architecture:**  
+  The network builds upon the classical ResNet design. Key modifications include:
+  - **BasicBlock with Dropout:** Each residual block can optionally include dropout for regularization.
+  - **Configurable Kernels:** Both the main convolutional layers and the shortcut connections support configurable kernel sizes.
+  - **SE Block:** A Squeeze-and-Excitation block is integrated to recalibrate feature responses.
+  - **Lookahead Optimizer:** The optimizer uses a Lookahead strategy (k steps forward and 1 step back) to improve convergence.
 
----
+- **Training Pipeline:**  
+  The training setup includes:
+  - Data augmentation (random cropping and horizontal flipping) and normalization for CIFAR-10.
+  - A training loop with logging via TensorBoard.
+  - Validation routines that generate metrics such as accuracy, loss curves, confusion matrix, and a classification report.
+  - Checkpointing of the best performing model.
+  - A scheduler (CosineAnnealingLR) to adjust the learning rate.
 
-## 2. Methodology
+- **Inference on Custom Test Dataset:**  
+  An inference pipeline is provided to run predictions on a custom test dataset (provided in a pickle file format) and output the results in a CSV file. The code also verifies the total number of parameters to ensure the model stays under a 5M parameter limit.
 
-### 2.1 Model Architecture & Hyperparameters
+## Setup and Installation
 
-#### Modified ResNet Architecture
+Follow these steps to set up the project on your local machine:
 
-- **Residual Blocks:**  
-  The network is composed of multiple stages, each containing a set of residual blocks. Our configuration uses three stages with block counts `[4, 4, 3]`. Each block consists of two convolutional layers with batch normalization and ReLU activations, along with identity shortcut connections to facilitate gradient flow.
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/SaniyaGapchup/DL-Project-1-SP25.git
+   cd DL-Project-1-SP25
+   ```
 
-- **Convolutional Layers:**  
-  - **Main Convolutions:** Each block uses a 3×3 convolution (`conv_kernel_sizes: [3, 3, 3]`) to extract local spatial features.
-  - **Shortcut Connections:** Identity mapping is achieved via 1×1 convolutions (`shortcut_kernel_sizes: [1, 1, 1]`) when the number of channels changes or when downsampling is needed.
+2. **Create a Virtual Environment:**
+   ```bash
+   python -m venv myenv
+   ```
 
-- **Channel Depth and Pooling:**  
-  The network begins with 64 channels (`num_channels: 64`) and concludes with an average pooling layer (`avg_pool_kernel_size: 8`) to reduce the spatial dimensions before classification.
+3. **Activate the Virtual Environment:**
+   - On Windows:
+     ```bash
+     myenv\Scripts\activate
+     ```
+   - On macOS/Linux:
+     ```bash
+     source myenv/bin/activate
+     ```
 
-#### Squeeze-and-Excitation (SE) Blocks
+4. **Install the Required Packages:**
+   Ensure that your `requirements.txt` includes packages such as:
+   - torch
+   - torchvision
+   - numpy
+   - pyyaml
+   - tensorboard
+   - torchsummary
+   - matplotlib
+   - seaborn
+   - scikit-learn
+   - pandas
 
-- **Purpose:**  
-  SE blocks are integrated to recalibrate the feature maps by modeling channel interdependencies. This mechanism allows the network to emphasize informative features while suppressing less useful ones.
+   Then run:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-- **Implementation Details:**  
-  1. **Squeeze:** Global average pooling compresses the spatial dimensions, producing a channel descriptor.  
-  2. **Excitation:** The descriptor passes through two fully connected (or 1×1 convolutional) layers with a ReLU activation followed by a sigmoid function, yielding channel-wise weights.  
-  3. **Recalibration:** These weights multiply the original feature maps to dynamically adjust channel responses.
+5. **Add the Virtual Environment to Jupyter Notebook:**
+   ```bash
+   pip install ipykernel
+   python -m ipykernel install --user --name=myenv
+   ```
 
-In our configuration, the SE block is enabled (`squeeze_and_excitation: True`), which provides a significant boost in discriminative capability with minimal extra parameters.
+6. **Install Jupyter**
+   ```bash
+   pip install jupyter
+   ```
 
-#### Hyperparameters Summary
+6. **Launch Jupyter Notebook:**
+   ```bash
+   jupyter notebook
+   ```
+   Open the provided notebook (e.g., `CIFAR10_DL_PROJECT_SP25.ipynb`) in your browser.
 
-- **Model Hyperparameters:**
-  - `num_blocks`: [4, 4, 3]
-  - `conv_kernel_sizes`: [3, 3, 3]
-  - `shortcut_kernel_sizes`: [1, 1, 1]
-  - `num_channels`: 64
-  - `avg_pool_kernel_size`: 8
-  - `drop`: 0.2 (Dropout rate applied within residual blocks)
-  - `squeeze_and_excitation`: True
+7. **Run All Cells:**
+   Execute all cells in the notebook to train the model, visualize results, and run the inference script on the custom test dataset.
 
-### 2.2 Optimization and Training Strategy
+## Inference Script
 
-#### Data Preparation
+Below is the inference script used to process a custom test dataset stored in a pickle file (`cifar_test_nolabel.pkl`):
 
-- **Data Augmentation:**  
-  Random cropping (with padding) and random horizontal flipping are applied to enhance the training set diversity (`data_augmentation: True`).
+```python
+# Custom Dataset Evaluation
+import pickle
+import pandas as pd
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as transforms
+import numpy as np
 
-- **Normalization:**  
-  Images are normalized using CIFAR-10’s mean and standard deviation (`data_normalize: True`).
+class CustomTestDataset(Dataset):
+    def __init__(self, pkl_file, transform=None):
+        """
+        Args:
+            pkl_file (string): Path to the pkl file with structure:
+            {
+                b'data': numpy array of shape (N, 32, 32, 3),
+                b'ids': numpy array of shape (N,)
+            }
+        """
+        with open(pkl_file, 'rb') as f:
+            self.data = pickle.load(f)
+        self.images = self.data[b'data']  # Shape: (N, 32, 32, 3)
+        self.ids = self.data[b'ids']      # Shape: (N,)
+        self.transform = transform
 
-#### Training Parameters
+    def __len__(self):
+        return len(self.images)
 
-- **Batch Size & Data Loader:**  
-  - Batch size: 128  
-  - Number of workers: 8
+    def __getitem__(self, idx):
+        image = self.images[idx].astype(np.uint8)
+        image_id = self.ids[idx]
+        if self.transform:
+            image = self.transform(image)
+        return image, image_id
 
-- **Training Duration:**  
-  The model is trained for 300 epochs (`max_epochs: 300`).
+# Define transforms for test data
+transform_test = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+])
 
-#### Optimization Techniques
+# Load custom test dataset
+custom_testset = CustomTestDataset(
+    pkl_file='cifar_test_nolabel.pkl',
+    transform=transform_test
+)
 
-- **Base Optimizer:**  
-  Stochastic Gradient Descent (SGD) is used with:
-  - Learning rate (`lr`): 0.1
-  - Momentum: 0.9
-  - Weight decay: 5e-4
+# Create DataLoader
+custom_testloader = DataLoader(
+    custom_testset,
+    batch_size=100,
+    shuffle=False,
+    num_workers=2
+)
 
-- **Lookahead Optimizer:**  
-  To stabilize and accelerate convergence, SGD is wrapped with a Lookahead optimizer:
-  - Lookahead steps (`lookahead_k`): 5
-  - Interpolation factor (`lookahead_alpha`): 0.5
+# Set model to evaluation mode and run inference
+predictions = []
+ids = []
+net.eval()
 
-- **Learning Rate Scheduler:**  
-  A Cosine Annealing scheduler (`lr_sched: "CosineAnnealingLR"`) gradually reduces the learning rate over training epochs.
+with torch.no_grad():
+    for batch_images, batch_ids in custom_testloader:
+        batch_images = batch_images.to(device)
+        outputs = net(batch_images)
+        _, predicted = outputs.max(1)
+        predictions.extend(predicted.cpu().numpy())
+        ids.extend(batch_ids.numpy())
 
-- **Gradient Clipping:**  
-  Not applied in this configuration (`grad_clip: None`).
+# Save predictions to CSV
+results_df = pd.DataFrame({
+    'ID': ids,
+    'Labels': predictions
+})
+results_df.to_csv('predictions.csv', index=False)
+print("Predictions saved to predictions.csv")
+```
 
-### 2.3 Implementation Details
+## Additional Notes
 
-- **Framework:**  
-  The project is implemented in PyTorch, utilizing its flexible modules for neural network construction, data handling, and GPU acceleration.
+- **TensorBoard Logging:**  
+  Training logs are saved to `summaries/notebook_run`. To view the logs, run:
+  ```bash
+  tensorboard --logdir=summaries/notebook_run
+  ```
 
-- **Code Structure:**
-  1. **Model Definition:**  
-     The ResNet is built with modular residual blocks that incorporate dropout and optional SE blocks. A helper function (`conv1x1`) is defined for 1×1 convolutions, crucial for shortcut connections and SE block operations.
-  2. **Training Pipeline:**  
-     The training loop includes:
-     - Forward pass with CrossEntropyLoss.
-     - Backward propagation and gradient computation.
-     - Optimizer updates with the Lookahead mechanism.
-     - Logging of loss and accuracy metrics via TensorBoard.
-     - Checkpointing when validation accuracy improves.
-  3. **Inference Pipeline:**  
-     A custom dataset class loads test data from a pickle file (`cifar_test_nolabel.pkl`), and the model’s predictions are saved in a CSV file.
-  4. **Utility Functions:**  
-     Additional scripts count the model parameters to ensure the total remains under the 5 million parameter threshold.
+- **Model Checkpointing:**  
+  The model checkpoints are automatically saved in the `checkpoints` directory whenever the validation accuracy improves.
 
----
+- **Parameter Budget:**  
+  A utility function is provided to count the model parameters. If the total exceeds 5 million, a warning is issued to help maintain efficiency.
 
-## 3. Experiments and Results
+## Experiments and Results
 
-### 3.1 Training & Validation Curves
+### Training & Validation Curves
 
 The figures below illustrate the training and validation curves for both loss and accuracy across 300 epochs.
 
@@ -129,7 +198,7 @@ As seen in Figure 1, the training loss rapidly decreases in the early epochs, th
 
 In Figure 2, we observe a steep initial increase in both training and validation accuracy, followed by a slower, more gradual improvement. The model maintains a high level of accuracy throughout the final epochs, demonstrating strong generalization capabilities.
 
-### 3.2 Confusion Matrix
+### Confusion Matrix
 
 To further analyze class-wise performance, we generate a confusion matrix (Figure 3).
 
@@ -138,7 +207,7 @@ To further analyze class-wise performance, we generate a confusion matrix (Figur
 
 From the confusion matrix, we can see that most classes are correctly predicted at high rates, indicating the network’s strong discriminative ability. Misclassifications tend to occur in visually similar classes, which is a common challenge in CIFAR-10.
 
-### 3.3 Overall Performance
+### Overall Performance
 
 - **Convergence:**  
   Training and validation losses/accuracies confirm that the model learns robust feature representations.
@@ -147,9 +216,7 @@ From the confusion matrix, we can see that most classes are correctly predicted 
 - **Accuracy:**  
   The model demonstrates competitive accuracy compared to larger networks like ResNet18, showcasing the effectiveness of integrating dropout and SE blocks.
 
----
-
-## 4. System Specifications
+## System Specifications
 
 All experiments and training processes were conducted on the following hardware and software setup:
 
@@ -163,22 +230,20 @@ All experiments and training processes were conducted on the following hardware 
 
 This high-performance environment allowed for rapid experimentation, large batch sizes, and efficient training.
 
----
+## Teammates
 
-## 5. Conclusion
+- Saniya Gapchup, Sakshi Bhavsar, Samradnyee Shinde
 
-This project presents a comprehensive exploration of a modified ResNet architecture for CIFAR-10 classification that strikes an effective balance between accuracy and efficiency. Key findings include:
+## References
 
-- **Efficient Architecture:**  
-  The model is designed to operate under a strict parameter budget (<5 million parameters) by employing a tailored residual block design with configurable kernels, dropout, and SE blocks.
+- **Efficient ResNets: Residual Network Design**  
+  Aditya Thakur, Harish Chauhan, Nikunj Gupta 
+  [arXiv:2306.12100](https://doi.org/10.48550/arXiv.2306.12100)
 
-- **Enhanced Feature Recalibration:**  
-  The integration of Squeeze-and-Excitation blocks significantly improves the network’s ability to capture and prioritize informative features, boosting overall performance with minimal additional parameters.
+## Acknowledgements
 
-- **Robust Training Strategy:**  
-  Advanced techniques such as data augmentation, Cosine Annealing learning rate scheduling, and the Lookahead optimizer contribute to stable convergence and high accuracy.
+- Thanks to the original ResNet authors and the PyTorch community for their invaluable contributions.
 
-- **Practical Applicability:**  
-  The model is well-suited for deployment on resource-constrained devices, as demonstrated by its strong performance despite a limited parameter count.
 
-In summary, our modified ResNet with Squeeze-and-Excitation blocks offers a promising solution for CIFAR-10 classification where both performance and parameter efficiency are critical. Future directions include extending this architecture to other datasets, experimenting with additional regularization techniques, and fine-tuning hyperparameters to further improve performance.
+
+
