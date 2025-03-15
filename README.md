@@ -195,4 +195,3 @@ print("Predictions saved to predictions.csv")
 ## Acknowledgements
 
 - Thanks to the original ResNet authors and the PyTorch community for their invaluable contributions.
-```
