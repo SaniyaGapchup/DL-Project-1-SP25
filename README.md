@@ -30,23 +30,23 @@ Follow these steps to set up the project on your local machine:
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/your_username/your_repository.git
-   cd your_repository
+   git clone https://github.com/SaniyaGapchup/DL-Project-1-SP25.git
+   cd DL-Project-1-SP25
    ```
 
 2. **Create a Virtual Environment:**
    ```bash
-   python -m venv venv
+   python -m venv myenv
    ```
 
 3. **Activate the Virtual Environment:**
    - On Windows:
      ```bash
-     venv\Scripts\activate
+     myenv\Scripts\activate
      ```
    - On macOS/Linux:
      ```bash
-     source venv/bin/activate
+     source myenv/bin/activate
      ```
 
 4. **Install the Required Packages:**
@@ -70,14 +70,19 @@ Follow these steps to set up the project on your local machine:
 5. **Add the Virtual Environment to Jupyter Notebook:**
    ```bash
    pip install ipykernel
-   python -m ipykernel install --user --name=venv
+   python -m ipykernel install --user --name=myenv
+   ```
+
+6. **Install Jupyter**
+   ```bash
+   pip install jupyter
    ```
 
 6. **Launch Jupyter Notebook:**
    ```bash
    jupyter notebook
    ```
-   Open the provided notebook (e.g., `project_notebook.ipynb`) in your browser.
+   Open the provided notebook (e.g., `CIFAR10_DL_PROJECT_SP25.ipynb`) in your browser.
 
 7. **Run All Cells:**
    Execute all cells in the notebook to train the model, visualize results, and run the inference script on the custom test dataset.
@@ -176,6 +181,10 @@ print("Predictions saved to predictions.csv")
 
 - **Parameter Budget:**  
   A utility function is provided to count the model parameters. If the total exceeds 5 million, a warning is issued to help maintain efficiency.
+
+## Teammates
+
+- Saniya Gapchup, Sakshi Bhavsar, Samradnyee Shinde
 
 ## References
 
